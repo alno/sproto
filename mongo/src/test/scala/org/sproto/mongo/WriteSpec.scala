@@ -80,6 +80,10 @@ class WriteSpec extends Spec with ShouldMatchers {
         write(Aaa("ddd", 23), w)
       }
 
+      it("should be converted to BasicDBObject") {
+        (to(Aaa("ddd", 23)): BasicDBObject) should equal(dbObject("a" -> "ddd", "b" -> 23))
+      }
+
       describe("with subobjects") {
 
         case class Bbb(x: Double, y: Aaa)
@@ -95,6 +99,10 @@ class WriteSpec extends Spec with ShouldMatchers {
 
         it("should be writed to any") {
           write(Bbb(1.0, Aaa("ddd", 23)), w)
+        }
+
+        it("should be converted to BasicDBObject") {
+          (to(Bbb(1.0, Aaa("ddd", 23))): BasicDBObject) should equal(dbObject("x" -> 1.0, "y" -> dbObject("a" -> "ddd", "b" -> 23)))
         }
 
       }
@@ -114,6 +122,33 @@ class WriteSpec extends Spec with ShouldMatchers {
 
       it("should be writed to any") {
         write(Aaa("ddd", 23), w)
+      }
+
+      it("should be converted to BasicDBObject") {
+        (to(Aaa("ddd", 23)): BasicDBObject) should equal(dbObject("a" -> "ddd", "b" -> 23))
+      }
+
+      describe("with subobjects") {
+
+        case class Bbb(x: Double, y: Aaa)
+
+        implicit def canWriteBbb[W](implicit cwd: CanWrite[Double, W], cwa: CanWrite[Aaa, W]) = new CanWrite[Bbb, MapWriter[W]] {
+
+          def write(that: Bbb, to: MapWriter[W]) {
+            writeField("x", that.x, to)
+            writeField("y", that.y, to)
+          }
+
+        }
+
+        it("should be writed to any") {
+          write(Bbb(1.0, Aaa("ddd", 23)), w)
+        }
+
+        it("should be converted to BasicDBObject") {
+          (to(Bbb(1.0, Aaa("ddd", 23))): BasicDBObject) should equal(dbObject("x" -> 1.0, "y" -> dbObject("a" -> "ddd", "b" -> 23)))
+        }
+
       }
 
     }
@@ -140,6 +175,10 @@ class WriteSpec extends Spec with ShouldMatchers {
         write(Aaa(Set("ddd"), List(23, 11)), w)
       }
 
+      it("should be converted to BasicDBObject") {
+        (to(Aaa(Set("ddd"), List(23, 11))): BasicDBObject) should equal(dbObject("a" -> dbList("ddd"), "b" -> dbList(23, 11)))
+      }
+
     }
 
     describe("with universal writing") {
@@ -155,6 +194,10 @@ class WriteSpec extends Spec with ShouldMatchers {
 
       it("should be writed to any") {
         write(Aaa(Set("ddd"), List(23, 11)), w)
+      }
+
+      it("should be converted to BasicDBObject") {
+        (to(Aaa(Set("ddd"), List(23, 11))): BasicDBObject) should equal(dbObject("a" -> dbList("ddd"), "b" -> dbList(23, 11)))
       }
 
     }
