@@ -6,20 +6,20 @@ import org.scalatest.Spec
 import org.scalatest.matchers.ShouldMatchers
 import org.sproto._
 import org.sproto.mongo.MongoWriteProtocol._
-import org.bson.types.BasicBSONList
-import org.bson.BasicBSONObject
+import com.mongodb.BasicDBList
+import com.mongodb.BasicDBObject
 
 @RunWith(classOf[JUnitRunner])
 class WriteSpec extends Spec with ShouldMatchers {
 
   def dbList(elems: Any*) = {
-    val l = new BasicBSONList
+    val l = new BasicDBList
     elems.foreach(x => l.add(x.asInstanceOf[AnyRef]))
     l
   }
 
   def dbObject(elems: (String, Any)*) = {
-    val o = new BasicBSONObject
+    val o = new BasicDBObject
     elems.foreach(x => o.put(x._1, x._2.asInstanceOf[AnyRef]))
     o
   }
@@ -32,15 +32,21 @@ class WriteSpec extends Spec with ShouldMatchers {
 
       w.result should equal("qwerty")
     }
+    it("should be converted as is") {
+      to("qwerty") should equal("qwerty")
+    }
   }
 
   describe("Array") {
-     it("of strings should be writed to any") {
+    it("of strings should be writed to any") {
       val w = new MongoWriter
 
       write(List("aaa", "bbb"), w)
 
       w.result should equal(dbList("aaa", "bbb"))
+    }
+    it("of strings should be converted to any") {
+      (to(List("aaa", "bbb")): BasicDBList) should equal(dbList("aaa", "bbb"))
     }
     it("of integers should be writed to any") {
       val w = new MongoWriter
@@ -48,6 +54,9 @@ class WriteSpec extends Spec with ShouldMatchers {
       write(List(1, 2, 3), w)
 
       w.result should equal(dbList(1, 2, 3))
+    }
+    it("of integers should be converted to any") {
+      (to(List("aaa", "bbb")): BasicDBList) should equal(dbList("aaa", "bbb"))
     }
   }
 
@@ -58,35 +67,54 @@ class WriteSpec extends Spec with ShouldMatchers {
 
     describe("with specialized writing") {
 
-	    implicit object canWriteAaa extends CanWrite[Aaa, MongoObjectWriter] {
+      implicit object canWriteAaa extends CanWrite[Aaa, MapWriter[MongoWriter]] {
 
-	      def write(that: Aaa, to: MongoObjectWriter) {
-	        writeField("a", that.a, to)
-	        writeField("b", that.b, to)
-	      }
+        def write(that: Aaa, to: MapWriter[MongoWriter]) {
+          writeField("a", that.a, to)
+          writeField("b", that.b, to)
+        }
 
-	    }
+      }
 
-	    it("should be writed to any") {
-	      write(Aaa("ddd", 23), w)
-	    }
+      it("should be writed to any") {
+        write(Aaa("ddd", 23), w)
+      }
+
+      describe("with subobjects") {
+
+        case class Bbb(x: Double, y: Aaa)
+
+        implicit object canWriteBbb extends CanWrite[Bbb, MapWriter[MongoWriter]] {
+
+          def write(that: Bbb, to: MapWriter[MongoWriter]) {
+            writeField("x", that.x, to)
+            writeField("y", that.y, to)
+          }
+
+        }
+
+        it("should be writed to any") {
+          write(Bbb(1.0, Aaa("ddd", 23)), w)
+        }
+
+      }
 
     }
 
     describe("with universal writing") {
 
-	    implicit def canWriteAaa[W](implicit cws: CanWrite[String, W], cwi: CanWrite[Int,W]) = new CanWrite[Aaa, MapWriter[W]] {
+      implicit def canWriteAaa[W](implicit cws: CanWrite[String, W], cwi: CanWrite[Int, W]) = new CanWrite[Aaa, MapWriter[W]] {
 
-	      def write(that: Aaa, to: MapWriter[W]) {
-	        writeField("a", that.a, to)
-	        writeField("b", that.b, to)
-	      }
+        def write(that: Aaa, to: MapWriter[W]) {
+          writeField("a", that.a, to)
+          writeField("b", that.b, to)
+        }
 
-	    }
+      }
 
-	    it("should be writed to any") {
-	      write(Aaa("ddd", 23), w)
-	    }
+      it("should be writed to any") {
+        write(Aaa("ddd", 23), w)
+      }
 
     }
 
@@ -99,35 +127,35 @@ class WriteSpec extends Spec with ShouldMatchers {
 
     describe("with specialized writing") {
 
-	    implicit object canWriteAaa extends CanWrite[Aaa, MongoObjectWriter] {
+      implicit object canWriteAaa extends CanWrite[Aaa, MapWriter[MongoWriter]] {
 
-	      def write(that: Aaa, to: MongoObjectWriter) {
-	        writeField("a", that.a, to)
-	        writeField("b", that.b, to)
-	      }
+        def write(that: Aaa, to: MapWriter[MongoWriter]) {
+          writeField("a", that.a, to)
+          writeField("b", that.b, to)
+        }
 
-	    }
+      }
 
-	    it("should be writed to any") {
-	      write(Aaa(Set("ddd"), List(23,11)), w)
-	    }
+      it("should be writed to any") {
+        write(Aaa(Set("ddd"), List(23, 11)), w)
+      }
 
     }
 
     describe("with universal writing") {
 
-	    implicit def canWriteAaa[W](implicit cws: CanWrite[String, W], cwi: CanWrite[Int,W], lc: W => SeqWriter[W]) = new CanWrite[Aaa, MapWriter[W]] {
+      implicit def canWriteAaa[W](implicit cws: CanWrite[Set[String], W], cwi: CanWrite[List[Int], W]) = new CanWrite[Aaa, MapWriter[W]] {
 
-	      def write(that: Aaa, to: MapWriter[W]) {
-	        writeField("a", that.a, to)
-	        writeField("b", that.b, to)
-	      }
+        def write(that: Aaa, to: MapWriter[W]) {
+          writeField("a", that.a, to)
+          writeField("b", that.b, to)
+        }
 
-	    }
+      }
 
-	    it("should be writed to any") {
-	      write(Aaa(Set("ddd"), List(23,11)), w)
-	    }
+      it("should be writed to any") {
+        write(Aaa(Set("ddd"), List(23, 11)), w)
+      }
 
     }
 

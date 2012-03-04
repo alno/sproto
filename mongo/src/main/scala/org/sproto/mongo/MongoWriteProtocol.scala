@@ -1,9 +1,8 @@
 package org.sproto.mongo
 
 import org.sproto._
-
-import org.bson.types.BasicBSONList
-import org.bson.BasicBSONObject
+import com.mongodb.BasicDBObject
+import com.mongodb.BasicDBList
 
 class MongoWriter {
 
@@ -13,7 +12,7 @@ class MongoWriter {
 
 class MongoObjectWriter extends MapWriter[MongoWriter] {
 
-  val result = new BasicBSONObject
+  val result = new BasicDBObject
 
   def writeField[T](name: String, value: T)(implicit canWrite: CanWrite[T, MongoWriter]) {
     val anyWriter = new MongoWriter // TODO Reusing?
@@ -25,7 +24,7 @@ class MongoObjectWriter extends MapWriter[MongoWriter] {
 
 class MongoListWriter extends SeqWriter[MongoWriter] {
 
-  val result = new BasicBSONList
+  val result = new BasicDBList
 
   def writeElement[T](value: T)(implicit canWrite: CanWrite[T, MongoWriter]) {
     val anyWriter = new MongoWriter // TODO Reusing?
@@ -35,7 +34,41 @@ class MongoListWriter extends SeqWriter[MongoWriter] {
 
 }
 
-trait MongoWriteProtocol extends WriteProtocol {
+trait MongoWriteProtocolLowest {
+
+  implicit def canConvert[T](implicit cw: CanWrite[T, MongoWriter]) = new CanConvertTo[T, Any] {
+
+    def convert(that: T) = {
+      val w = new MongoWriter
+      cw.write(that, w)
+      w.result
+    }
+
+  }
+
+}
+
+trait MongoWriteProtocol extends WriteProtocol with MongoWriteProtocolLowest {
+
+  implicit def canConvertToObj[T](implicit cw: CanWrite[T, MongoObjectWriter]) = new CanConvertTo[T, BasicDBObject] {
+
+    def convert(that: T) = {
+      val w = new MongoObjectWriter
+      cw.write(that, w)
+      w.result
+    }
+
+  }
+
+  implicit def canConvertToList[T](implicit cw: CanWrite[T, MongoListWriter]) = new CanConvertTo[T, BasicDBList] {
+
+    def convert(that: T) = {
+      val w = new MongoListWriter
+      cw.write(that, w)
+      w.result
+    }
+
+  }
 
   implicit def toObjectWriter(w: MongoWriter) = {
     val r = new MongoObjectWriter
@@ -49,7 +82,7 @@ trait MongoWriteProtocol extends WriteProtocol {
     r
   }
 
-  def canWriteDirect[T] = new CanWrite[T,MongoWriter] {
+  def canWriteDirect[T] = new CanWrite[T, MongoWriter] {
     def write(that: T, to: MongoWriter) {
       to.result = that
     }
