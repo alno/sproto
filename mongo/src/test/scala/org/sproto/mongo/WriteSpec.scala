@@ -204,4 +204,31 @@ class WriteSpec extends Spec with ShouldMatchers {
 
   }
 
+  describe("Recursive object") {
+    val w = new MongoWriter
+
+    case class Aaa(a: Option[Aaa])
+
+    describe("with specialized writing") {
+
+      implicit object canWriteAaa extends CanWrite[Aaa, MapWriter[MongoWriter]] {
+
+        def write(that: Aaa, to: MapWriter[MongoWriter]) {
+          that.a.foreach(writeField("a",_,to))
+        }
+
+      }
+
+      it("should be writed to any") {
+        write(Aaa(Some(Aaa(None))), w)
+      }
+
+      it("should be converted to BasicDBObject") {
+        (to(Aaa(Some(Aaa(None)))): BasicDBObject) should equal(dbObject("a" -> dbObject()))
+      }
+
+    }
+
+  }
+
 }
