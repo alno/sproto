@@ -34,11 +34,11 @@ class MongoListWriter extends SeqWriter[MongoWriter] {
 
 }
 
-trait MongoWriteProtocolLowest {
+trait MongoWriteProtocolLow {
 
   implicit def canConvert[T](implicit cw: CanWrite[T, MongoWriter]) = new CanConvertTo[T, Any] {
 
-    def convert(that: T) = {
+    def convertTo(that: T) = {
       val w = new MongoWriter
       cw.write(that, w)
       w.result
@@ -48,11 +48,11 @@ trait MongoWriteProtocolLowest {
 
 }
 
-trait MongoWriteProtocol extends WriteProtocol with MongoWriteProtocolLowest {
+trait MongoWriteProtocol extends WriteProtocol with WriteMapSupport with WriteSeqSupport with MongoWriteProtocolLow {
 
   implicit def canConvertToObj[T](implicit cw: CanWrite[T, MongoObjectWriter]) = new CanConvertTo[T, BasicDBObject] {
 
-    def convert(that: T) = {
+    def convertTo(that: T) = {
       val w = new MongoObjectWriter
       cw.write(that, w)
       w.result
@@ -62,7 +62,7 @@ trait MongoWriteProtocol extends WriteProtocol with MongoWriteProtocolLowest {
 
   implicit def canConvertToList[T](implicit cw: CanWrite[T, MongoListWriter]) = new CanConvertTo[T, BasicDBList] {
 
-    def convert(that: T) = {
+    def convertTo(that: T) = {
       val w = new MongoListWriter
       cw.write(that, w)
       w.result
