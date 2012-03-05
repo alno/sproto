@@ -10,19 +10,7 @@ import com.mongodb.BasicDBList
 import com.mongodb.BasicDBObject
 
 @RunWith(classOf[JUnitRunner])
-class WriteSpec extends Spec with ShouldMatchers {
-
-  def dbList(elems: Any*) = {
-    val l = new BasicDBList
-    elems.foreach(x => l.add(x.asInstanceOf[AnyRef]))
-    l
-  }
-
-  def dbObject(elems: (String, Any)*) = {
-    val o = new BasicDBObject
-    elems.foreach(x => o.put(x._1, x._2.asInstanceOf[AnyRef]))
-    o
-  }
+class WriteSpec extends Spec with ShouldMatchers with Helpers {
 
   describe("String") {
     it("should be writen as is") {
@@ -204,6 +192,87 @@ class WriteSpec extends Spec with ShouldMatchers {
 
   }
 
+  describe("Object with optional field") {
+    val w = new MongoWriter
+
+    case class ClassWithOpt(lon: Long, opt: Option[String])
+
+    describe("with specialized writing") {
+
+      implicit object canWriteAaa extends CanWrite[ClassWithOpt, MapWriter[MongoWriter]] {
+
+        def write(that: ClassWithOpt, to: MapWriter[MongoWriter]) {
+          writeField("lon", that.lon, to)
+          writeField("opt", that.opt, to)
+        }
+
+      }
+
+      describe("with Some in content") {
+        val obj = ClassWithOpt(11, Some("aaa"))
+
+        it("should be writed to MongoWriter") {
+          write(obj, w)
+        }
+
+        it("should be converted to BasicDBObject") {
+          (to(obj): BasicDBObject) should equal(dbObject("lon" -> 11, "opt" -> "aaa"))
+        }
+      }
+
+      describe("with None in content") {
+        val obj = ClassWithOpt(56, None)
+
+        it("should be writed to MongoWriter") {
+          write(obj, w)
+        }
+
+        it("should be converted to BasicDBObject") {
+          (to(obj): BasicDBObject) should equal(dbObject("lon" -> 56))
+        }
+      }
+
+    }
+
+    describe("with universal writing") {
+
+      implicit def canWriteAaa[W](implicit cws: CanWrite[Long, W], cwi: CanWrite[String, W]) = new CanWrite[ClassWithOpt, MapWriter[W]] {
+
+        def write(that: ClassWithOpt, to: MapWriter[W]) {
+          writeField("lon", that.lon, to)
+          writeField("opt", that.opt, to)
+        }
+
+      }
+
+      describe("with some content") {
+        val obj = ClassWithOpt(11, Some("aaa"))
+
+        it("should be writed to MongoWriter") {
+          write(obj, w)
+        }
+
+        it("should be converted to BasicDBObject") {
+          (to(obj): BasicDBObject) should equal(dbObject("lon" -> 11, "opt" -> "aaa"))
+        }
+      }
+
+      describe("with None in content") {
+        val obj = ClassWithOpt(56, None)
+
+        it("should be writed to MongoWriter") {
+          write(obj, w)
+        }
+
+        it("should be converted to BasicDBObject") {
+          (to(obj): BasicDBObject) should equal(dbObject("lon" -> 56))
+        }
+      }
+
+    }
+
+  }
+
   describe("Recursive object") {
     val w = new MongoWriter
 
@@ -214,7 +283,7 @@ class WriteSpec extends Spec with ShouldMatchers {
       implicit object canWriteAaa extends CanWrite[Aaa, MapWriter[MongoWriter]] {
 
         def write(that: Aaa, to: MapWriter[MongoWriter]) {
-          that.a.foreach(writeField("a",_,to))
+          that.a.foreach(writeField("a", _, to))
         }
 
       }

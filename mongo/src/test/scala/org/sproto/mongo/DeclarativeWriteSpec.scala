@@ -10,18 +10,7 @@ import com.mongodb.BasicDBList
 import com.mongodb.BasicDBObject
 
 @RunWith(classOf[JUnitRunner])
-class DeclarativeWriteSpec extends Spec with ShouldMatchers {
-  def dbList(elems: Any*) = {
-    val l = new BasicDBList
-    elems.foreach(x => l.add(x.asInstanceOf[AnyRef]))
-    l
-  }
-
-  def dbObject(elems: (String, Any)*) = {
-    val o = new BasicDBObject
-    elems.foreach(x => o.put(x._1, x._2.asInstanceOf[AnyRef]))
-    o
-  }
+class DeclarativeWriteSpec extends Spec with ShouldMatchers with Helpers {
 
   describe("Object") {
     val w = new MongoWriter

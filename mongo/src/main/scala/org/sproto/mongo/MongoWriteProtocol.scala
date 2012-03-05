@@ -48,7 +48,7 @@ trait MongoWriteProtocolLow {
 
 }
 
-trait MongoWriteProtocol extends WriteProtocol with WriteMapSupport with WriteSeqSupport with MongoWriteProtocolLow {
+trait MongoWriteProtocol extends WriteProtocol with WriteMapSupport with WriteOptionAsNoField with WriteSeqSupport with MongoWriteProtocolLow {
 
   implicit def canConvertToObj[T](implicit cw: CanWrite[T, MongoObjectWriter]) = new CanConvertTo[T, BasicDBObject] {
 
@@ -89,9 +89,13 @@ trait MongoWriteProtocol extends WriteProtocol with WriteMapSupport with WriteSe
   }
 
   implicit val canWriteString = canWriteDirect[String]
+  implicit val canWriteShort = canWriteDirect[Short]
   implicit val canWriteInt = canWriteDirect[Int]
+  implicit val canWriteLong = canWriteDirect[Long]
+  implicit val canWriteFloat = canWriteDirect[Float]
   implicit val canWriteDouble = canWriteDirect[Double]
   implicit val canWriteNumber = canWriteDirect[Number]
+  implicit val canWriteBoolean = canWriteDirect[Boolean]
 
 }
 
