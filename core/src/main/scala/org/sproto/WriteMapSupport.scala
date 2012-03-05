@@ -49,6 +49,17 @@ trait WriteMapSupport extends WriteMapSupportLow {
 
   }
 
+  def canWriteAsProduct[W, P, T1, T2, T3](dec: P => (T1, T2, T3))(n1: String, n2: String, n3: String)(implicit cw1: CanWriteInField[T1, W], cw2: CanWriteInField[T2, W], cw3: CanWriteInField[T3, W]) = new CanWrite[P, MapWriter[W]] {
+
+    def write(that: P, writer: MapWriter[W]) {
+      val t = dec(that)
+      cw1.writeInField(n1, t._1, writer)
+      cw2.writeInField(n2, t._2, writer)
+      cw3.writeInField(n3, t._3, writer)
+    }
+
+  }
+
 }
 
 trait WriteOptionAsNoField {

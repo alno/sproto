@@ -49,49 +49,33 @@ class WriteSpec extends Spec with ShouldMatchers with Helpers {
   }
 
   describe("Object") {
-    val w = new MongoWriter
-
-    case class Aaa(a: String, b: Int)
 
     describe("with specialized writing") {
 
-      implicit object canWriteAaa extends CanWrite[Aaa, MapWriter[MongoWriter]] {
+      implicit object canWriteAaa extends CanWrite[ObjSimple, MapWriter[MongoWriter]] {
 
-        def write(that: Aaa, to: MapWriter[MongoWriter]) {
+        def write(that: ObjSimple, to: MapWriter[MongoWriter]) {
           writeField("a", that.a, to)
           writeField("b", that.b, to)
+          writeField("c", that.c, to)
         }
 
       }
 
-      it("should be writed to any") {
-        write(Aaa("ddd", 23), w)
-      }
-
-      it("should be converted to BasicDBObject") {
-        (to(Aaa("ddd", 23)): BasicDBObject) should equal(dbObject("a" -> "ddd", "b" -> 23))
-      }
+      shoudBeWritedAndConvertedToDBObject(ObjSimple("ddd", 23, true), dbObject("a" -> "ddd", "b" -> 23, "c" -> true))
 
       describe("with subobjects") {
 
-        case class Bbb(x: Double, y: Aaa)
+        implicit object canWriteBbb extends CanWrite[ObjWithSub, MapWriter[MongoWriter]] {
 
-        implicit object canWriteBbb extends CanWrite[Bbb, MapWriter[MongoWriter]] {
-
-          def write(that: Bbb, to: MapWriter[MongoWriter]) {
+          def write(that: ObjWithSub, to: MapWriter[MongoWriter]) {
             writeField("x", that.x, to)
             writeField("y", that.y, to)
           }
 
         }
 
-        it("should be writed to any") {
-          write(Bbb(1.0, Aaa("ddd", 23)), w)
-        }
-
-        it("should be converted to BasicDBObject") {
-          (to(Bbb(1.0, Aaa("ddd", 23))): BasicDBObject) should equal(dbObject("x" -> 1.0, "y" -> dbObject("a" -> "ddd", "b" -> 23)))
-        }
+        shoudBeWritedAndConvertedToDBObject(ObjWithSub(1.0, ObjSimple("ddd", 23, false)), dbObject("x" -> 1.0, "y" -> dbObject("a" -> "ddd", "b" -> 23, "c" -> false)))
 
       }
 
@@ -99,43 +83,30 @@ class WriteSpec extends Spec with ShouldMatchers with Helpers {
 
     describe("with universal writing") {
 
-      implicit def canWriteAaa[W](implicit cws: CanWrite[String, W], cwi: CanWrite[Int, W]) = new CanWrite[Aaa, MapWriter[W]] {
+      implicit def canWriteAaa[W](implicit cws: CanWrite[String, W], cwi: CanWrite[Int, W], cwb: CanWrite[Boolean, W]) = new CanWrite[ObjSimple, MapWriter[W]] {
 
-        def write(that: Aaa, to: MapWriter[W]) {
+        def write(that: ObjSimple, to: MapWriter[W]) {
           writeField("a", that.a, to)
           writeField("b", that.b, to)
+          writeField("c", that.c, to)
         }
 
       }
 
-      it("should be writed to any") {
-        write(Aaa("ddd", 23), w)
-      }
-
-      it("should be converted to BasicDBObject") {
-        (to(Aaa("ddd", 23)): BasicDBObject) should equal(dbObject("a" -> "ddd", "b" -> 23))
-      }
+      shoudBeWritedAndConvertedToDBObject(ObjSimple("ddd", 23, false), dbObject("a" -> "ddd", "b" -> 23, "c" -> false))
 
       describe("with subobjects") {
 
-        case class Bbb(x: Double, y: Aaa)
+        implicit def canWriteBbb[W](implicit cwd: CanWrite[Double, W], cwa: CanWrite[ObjSimple, W]) = new CanWrite[ObjWithSub, MapWriter[W]] {
 
-        implicit def canWriteBbb[W](implicit cwd: CanWrite[Double, W], cwa: CanWrite[Aaa, W]) = new CanWrite[Bbb, MapWriter[W]] {
-
-          def write(that: Bbb, to: MapWriter[W]) {
+          def write(that: ObjWithSub, to: MapWriter[W]) {
             writeField("x", that.x, to)
             writeField("y", that.y, to)
           }
 
         }
 
-        it("should be writed to any") {
-          write(Bbb(1.0, Aaa("ddd", 23)), w)
-        }
-
-        it("should be converted to BasicDBObject") {
-          (to(Bbb(1.0, Aaa("ddd", 23))): BasicDBObject) should equal(dbObject("x" -> 1.0, "y" -> dbObject("a" -> "ddd", "b" -> 23)))
-        }
+        shoudBeWritedAndConvertedToDBObject(ObjWithSub(1.0, ObjSimple("ddd", 23, true)), dbObject("x" -> 1.0, "y" -> dbObject("a" -> "ddd", "b" -> 23, "c" -> true)))
 
       }
 
@@ -144,64 +115,46 @@ class WriteSpec extends Spec with ShouldMatchers with Helpers {
   }
 
   describe("Object with lists and sets") {
-    val w = new MongoWriter
-
-    case class Aaa(a: Set[String], b: List[Int])
 
     describe("with specialized writing") {
 
-      implicit object canWriteAaa extends CanWrite[Aaa, MapWriter[MongoWriter]] {
+      implicit object canWriteAaa extends CanWrite[ObjWithSets, MapWriter[MongoWriter]] {
 
-        def write(that: Aaa, to: MapWriter[MongoWriter]) {
+        def write(that: ObjWithSets, to: MapWriter[MongoWriter]) {
           writeField("a", that.a, to)
           writeField("b", that.b, to)
         }
 
       }
 
-      it("should be writed to any") {
-        write(Aaa(Set("ddd"), List(23, 11)), w)
-      }
-
-      it("should be converted to BasicDBObject") {
-        (to(Aaa(Set("ddd"), List(23, 11))): BasicDBObject) should equal(dbObject("a" -> dbList("ddd"), "b" -> dbList(23, 11)))
-      }
+      shoudBeWritedAndConvertedToDBObject(ObjWithSets(Set("ddd"), List(23, 11)), dbObject("a" -> dbList("ddd"), "b" -> dbList(23, 11)))
 
     }
 
     describe("with universal writing") {
 
-      implicit def canWriteAaa[W](implicit cws: CanWrite[Set[String], W], cwi: CanWrite[List[Int], W]) = new CanWrite[Aaa, MapWriter[W]] {
+      implicit def canWriteAaa[W](implicit cws: CanWrite[Set[String], W], cwi: CanWrite[List[Int], W]) = new CanWrite[ObjWithSets, MapWriter[W]] {
 
-        def write(that: Aaa, to: MapWriter[W]) {
+        def write(that: ObjWithSets, to: MapWriter[W]) {
           writeField("a", that.a, to)
           writeField("b", that.b, to)
         }
 
       }
 
-      it("should be writed to any") {
-        write(Aaa(Set("ddd"), List(23, 11)), w)
-      }
-
-      it("should be converted to BasicDBObject") {
-        (to(Aaa(Set("ddd"), List(23, 11))): BasicDBObject) should equal(dbObject("a" -> dbList("ddd"), "b" -> dbList(23, 11)))
-      }
+      shoudBeWritedAndConvertedToDBObject(ObjWithSets(Set("ddd"), List(23, 11)), dbObject("a" -> dbList("ddd"), "b" -> dbList(23, 11)))
 
     }
 
   }
 
   describe("Object with optional field") {
-    val w = new MongoWriter
-
-    case class ClassWithOpt(lon: Long, opt: Option[String])
 
     describe("with specialized writing") {
 
-      implicit object canWriteAaa extends CanWrite[ClassWithOpt, MapWriter[MongoWriter]] {
+      implicit object canWriteAaa extends CanWrite[ObjWithOpt, MapWriter[MongoWriter]] {
 
-        def write(that: ClassWithOpt, to: MapWriter[MongoWriter]) {
+        def write(that: ObjWithOpt, to: MapWriter[MongoWriter]) {
           writeField("lon", that.lon, to)
           writeField("opt", that.opt, to)
         }
@@ -209,64 +162,32 @@ class WriteSpec extends Spec with ShouldMatchers with Helpers {
       }
 
       describe("with Some in content") {
-        val obj = ClassWithOpt(11, Some("aaa"))
-
-        it("should be writed to MongoWriter") {
-          write(obj, w)
-        }
-
-        it("should be converted to BasicDBObject") {
-          (to(obj): BasicDBObject) should equal(dbObject("lon" -> 11, "opt" -> "aaa"))
-        }
+        shoudBeWritedAndConvertedToDBObject(ObjWithOpt(11, Some("aaa")), dbObject("lon" -> 11, "opt" -> "aaa"))
       }
 
       describe("with None in content") {
-        val obj = ClassWithOpt(56, None)
-
-        it("should be writed to MongoWriter") {
-          write(obj, w)
-        }
-
-        it("should be converted to BasicDBObject") {
-          (to(obj): BasicDBObject) should equal(dbObject("lon" -> 56))
-        }
+        shoudBeWritedAndConvertedToDBObject(ObjWithOpt(56, None), dbObject("lon" -> 56))
       }
 
     }
 
     describe("with universal writing") {
 
-      implicit def canWriteAaa[W](implicit cws: CanWrite[Long, W], cwi: CanWrite[String, W]) = new CanWrite[ClassWithOpt, MapWriter[W]] {
+      implicit def canWriteAaa[W](implicit cws: CanWrite[Long, W], cwi: CanWrite[String, W]) = new CanWrite[ObjWithOpt, MapWriter[W]] {
 
-        def write(that: ClassWithOpt, to: MapWriter[W]) {
+        def write(that: ObjWithOpt, to: MapWriter[W]) {
           writeField("lon", that.lon, to)
           writeField("opt", that.opt, to)
         }
 
       }
 
-      describe("with some content") {
-        val obj = ClassWithOpt(11, Some("aaa"))
-
-        it("should be writed to MongoWriter") {
-          write(obj, w)
-        }
-
-        it("should be converted to BasicDBObject") {
-          (to(obj): BasicDBObject) should equal(dbObject("lon" -> 11, "opt" -> "aaa"))
-        }
+      describe("with Some in content") {
+        shoudBeWritedAndConvertedToDBObject(ObjWithOpt(11, Some("aaa")), dbObject("lon" -> 11, "opt" -> "aaa"))
       }
 
       describe("with None in content") {
-        val obj = ClassWithOpt(56, None)
-
-        it("should be writed to MongoWriter") {
-          write(obj, w)
-        }
-
-        it("should be converted to BasicDBObject") {
-          (to(obj): BasicDBObject) should equal(dbObject("lon" -> 56))
-        }
+        shoudBeWritedAndConvertedToDBObject(ObjWithOpt(56, None), dbObject("lon" -> 56))
       }
 
     }
@@ -274,27 +195,18 @@ class WriteSpec extends Spec with ShouldMatchers with Helpers {
   }
 
   describe("Recursive object") {
-    val w = new MongoWriter
-
-    case class Aaa(a: Option[Aaa])
 
     describe("with specialized writing") {
 
-      implicit object canWriteAaa extends CanWrite[Aaa, MapWriter[MongoWriter]] {
+      implicit object canWriteAaa extends CanWrite[RecursiveObj, MapWriter[MongoWriter]] {
 
-        def write(that: Aaa, to: MapWriter[MongoWriter]) {
-          that.a.foreach(writeField("a", _, to))
+        def write(that: RecursiveObj, to: MapWriter[MongoWriter]) {
+          writeField("a", that.a, to)
         }
 
       }
 
-      it("should be writed to any") {
-        write(Aaa(Some(Aaa(None))), w)
-      }
-
-      it("should be converted to BasicDBObject") {
-        (to(Aaa(Some(Aaa(None)))): BasicDBObject) should equal(dbObject("a" -> dbObject()))
-      }
+      shoudBeWritedAndConvertedToDBObject(RecursiveObj(Some(RecursiveObj(None))), dbObject("a" -> dbObject()))
 
     }
 

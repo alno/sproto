@@ -13,35 +13,18 @@ import com.mongodb.BasicDBObject
 class DeclarativeWriteSpec extends Spec with ShouldMatchers with Helpers {
 
   describe("Object") {
-    val w = new MongoWriter
-
-    case class Aaa(a: String, b: Int)
 
     describe("with specialized writing") {
 
-      implicit val canWriteAaa = canWriteAsProduct((p: Aaa) => Aaa.unapply(p).get)("a", "b")
+      implicit val canWriteAaa = canWriteAsProduct((p: ObjSimple) => ObjSimple.unapply(p).get)("a", "b", "c")
 
-      it("should be writed to any") {
-        write(Aaa("ddd", 23), w)
-      }
-
-      it("should be converted to BasicDBObject") {
-        (to(Aaa("ddd", 23)): BasicDBObject) should equal(dbObject("a" -> "ddd", "b" -> 23))
-      }
+      shoudBeWritedAndConvertedToDBObject(ObjSimple("ddd", 23, true), dbObject("a" -> "ddd", "b" -> 23, "c" -> true))
 
       describe("with subobjects") {
 
-        case class Bbb(x: Double, y: Aaa)
+        implicit val canWriteBbb = canWriteAsProduct((p: ObjWithSub) => ObjWithSub.unapply(p).get)("x", "y")
 
-        implicit val canWriteBbb = canWriteAsProduct((p: Bbb) => Bbb.unapply(p).get)("x", "y")
-
-        it("should be writed to any") {
-          write(Bbb(1.0, Aaa("ddd", 23)), w)
-        }
-
-        it("should be converted to BasicDBObject") {
-          (to(Bbb(1.0, Aaa("ddd", 23))): BasicDBObject) should equal(dbObject("x" -> 1.0, "y" -> dbObject("a" -> "ddd", "b" -> 23)))
-        }
+        shoudBeWritedAndConvertedToDBObject(ObjWithSub(1.0, ObjSimple("ddd", 23, false)), dbObject("x" -> 1.0, "y" -> dbObject("a" -> "ddd", "b" -> 23, "c" -> false)))
 
       }
 
@@ -49,29 +32,15 @@ class DeclarativeWriteSpec extends Spec with ShouldMatchers with Helpers {
 
     describe("with universal writing") {
 
-      implicit def canWriteAaa[W](implicit cws: CanWrite[String, W], cwi: CanWrite[Int, W]): CanWrite[Aaa, MapWriter[W]] = canWriteAsProduct((p: Aaa) => Aaa.unapply(p).get)("a", "b")
+      implicit def canWriteAaa[W](implicit cws: CanWrite[String, W], cwi: CanWrite[Int, W], cwb: CanWrite[Boolean, W]): CanWrite[ObjSimple, MapWriter[W]] = canWriteAsProduct((p: ObjSimple) => ObjSimple.unapply(p).get)("a", "b", "c")
 
-      it("should be writed to any") {
-        write(Aaa("ddd", 23), w)
-      }
-
-      it("should be converted to BasicDBObject") {
-        (to(Aaa("ddd", 23)): BasicDBObject) should equal(dbObject("a" -> "ddd", "b" -> 23))
-      }
+      shoudBeWritedAndConvertedToDBObject(ObjSimple("ddd", 23, false), dbObject("a" -> "ddd", "b" -> 23, "c" -> false))
 
       describe("with subobjects") {
 
-        case class Bbb(x: Double, y: Aaa)
+        implicit def canWriteBbb[W](implicit cwd: CanWrite[Double, W], cwa: CanWrite[ObjSimple, W]): CanWrite[ObjWithSub, MapWriter[W]] = canWriteAsProduct((p: ObjWithSub) => ObjWithSub.unapply(p).get)("x", "y")
 
-        implicit def canWriteBbb[W](implicit cwd: CanWrite[Double, W], cwa: CanWrite[Aaa, W]): CanWrite[Bbb, MapWriter[W]] = canWriteAsProduct((p: Bbb) => Bbb.unapply(p).get)("x", "y")
-
-        it("should be writed to any") {
-          write(Bbb(1.0, Aaa("ddd", 23)), w)
-        }
-
-        it("should be converted to BasicDBObject") {
-          (to(Bbb(1.0, Aaa("ddd", 23))): BasicDBObject) should equal(dbObject("x" -> 1.0, "y" -> dbObject("a" -> "ddd", "b" -> 23)))
-        }
+        shoudBeWritedAndConvertedToDBObject(ObjWithSub(1.0, ObjSimple("ddd", 23, true)), dbObject("x" -> 1.0, "y" -> dbObject("a" -> "ddd", "b" -> 23, "c" -> true)))
 
       }
 
@@ -80,35 +49,20 @@ class DeclarativeWriteSpec extends Spec with ShouldMatchers with Helpers {
   }
 
   describe("Object with lists and sets") {
-    val w = new MongoWriter
-
-    case class Aaa(a: Set[String], b: List[Int])
 
     describe("with specialized writing") {
 
-      implicit val canWriteAaa: CanWrite[Aaa, MapWriter[MongoWriter]] = canWriteAsProduct((p: Aaa) => Aaa.unapply(p).get)("a", "b")
+      implicit val canWriteAaa: CanWrite[ObjWithSets, MapWriter[MongoWriter]] = canWriteAsProduct((p: ObjWithSets) => ObjWithSets.unapply(p).get)("a", "b")
 
-      it("should be writed to any") {
-        write(Aaa(Set("ddd"), List(23, 11)), w)
-      }
-
-      it("should be converted to BasicDBObject") {
-        (to(Aaa(Set("ddd"), List(23, 11))): BasicDBObject) should equal(dbObject("a" -> dbList("ddd"), "b" -> dbList(23, 11)))
-      }
+      shoudBeWritedAndConvertedToDBObject(ObjWithSets(Set("ddd"), List(23, 11)), dbObject("a" -> dbList("ddd"), "b" -> dbList(23, 11)))
 
     }
 
     describe("with universal writing") {
 
-      implicit def canWriteAaa[W](implicit cws: CanWrite[Set[String], W], cwi: CanWrite[List[Int], W]): CanWrite[Aaa, MapWriter[W]] = canWriteAsProduct((p: Aaa) => Aaa.unapply(p).get)("a", "b")
+      implicit def canWriteAaa[W](implicit cws: CanWrite[Set[String], W], cwi: CanWrite[List[Int], W]): CanWrite[ObjWithSets, MapWriter[W]] = canWriteAsProduct((p: ObjWithSets) => ObjWithSets.unapply(p).get)("a", "b")
 
-      it("should be writed to any") {
-        write(Aaa(Set("ddd"), List(23, 11)), w)
-      }
-
-      it("should be converted to BasicDBObject") {
-        (to(Aaa(Set("ddd"), List(23, 11))): BasicDBObject) should equal(dbObject("a" -> dbList("ddd"), "b" -> dbList(23, 11)))
-      }
+      shoudBeWritedAndConvertedToDBObject(ObjWithSets(Set("ddd"), List(23, 11)), dbObject("a" -> dbList("ddd"), "b" -> dbList(23, 11)))
 
     }
 
