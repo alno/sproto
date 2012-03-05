@@ -1,0 +1,24 @@
+package org.sproto
+
+trait ReadMapSupportGen {
+
+  <#list 2..9 as i>
+  <#assign typeParams><#list 1..i as j>T${j}<#if i !=j>,</#if></#list></#assign>
+  <#assign nameParams><#list 1..i as j>n${j}: String<#if i != j>,</#if></#list></#assign>
+  <#assign implParams><#list 1..i as j>cr${j}: CanReadFromField[T${j}, R]<#if i != j>,</#if></#list></#assign>
+
+  def canReadAsProduct[R, P, ${typeParams}](com: (${typeParams}) => P)(${nameParams})(implicit ${implParams}) = new CanRead[P, MapReader[R]] {
+
+    def read(reader: MapReader[R]) = {
+      <#list 1..i as j>
+      val v${j} = cr${j}.readFromField(n${j}, reader)
+      </#list>
+
+      com(<#list 1..i as j>v${j}<#if i !=j>,</#if></#list>)
+    }
+
+  }
+
+  </#list>
+
+}

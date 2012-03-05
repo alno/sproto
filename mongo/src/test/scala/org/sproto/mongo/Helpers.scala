@@ -3,6 +3,7 @@ package org.sproto.mongo
 import org.scalatest.Spec
 import org.scalatest.matchers.ShouldMatchers
 import org.sproto._
+import org.sproto.mongo.MongoReadProtocol._
 import org.sproto.mongo.MongoWriteProtocol._
 import com.mongodb.BasicDBList
 import com.mongodb.BasicDBObject
@@ -31,6 +32,12 @@ trait Helpers { self: Spec with ShouldMatchers =>
 
     it("should be converted to BasicDBObject") {
       (to(obj): BasicDBObject) should equal(res)
+    }
+  }
+
+  def shoudBeReadAndConvertedFromDBObject[T](src: BasicDBObject, obj: T)(implicit ct: CanRead[T, MapReader[MongoReader]]) {
+    it("should be read from MongoReader") {
+      (read(new MongoReader(src)): T) should equal(obj)
     }
   }
 
