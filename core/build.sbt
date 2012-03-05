@@ -4,3 +4,5 @@ libraryDependencies ++= Seq(
   "org.scalatest" %% "scalatest" % "1.6.1" % "test"
 )
 
+sourceGenerators in Compile <+= (fmpp).task
+

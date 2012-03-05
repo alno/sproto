@@ -1,0 +1,23 @@
+package org.sproto
+
+trait WriteMapSupportGen {
+
+  <#list 2..9 as i>
+  <#assign typeParams><#list 1..i as j>T${j}<#if i !=j>,</#if></#list></#assign>
+  <#assign nameParams><#list 1..i as j>n${j}: String<#if i != j>,</#if></#list></#assign>
+  <#assign implParams><#list 1..i as j>cw${j}: CanWriteInField[T${j}, W]<#if i != j>,</#if></#list></#assign>
+
+  def canWriteAsProduct[W, P, ${typeParams}](dec: P => (${typeParams}))(${nameParams})(implicit ${implParams}) = new CanWrite[P, MapWriter[W]] {
+
+    def write(that: P, writer: MapWriter[W]) {
+      val t = dec(that)
+      <#list 1..i as j>
+      cw${j}.writeInField(n${j}, t._${j}, writer)
+      </#list>
+    }
+
+  }
+
+  </#list>
+
+}
