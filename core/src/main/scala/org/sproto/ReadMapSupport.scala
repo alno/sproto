@@ -55,3 +55,5 @@ trait ReadOptionAsNoField {
   }
 
 }
+
+object ReadMapSupport extends ReadMapSupport

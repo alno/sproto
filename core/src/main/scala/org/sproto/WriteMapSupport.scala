@@ -39,6 +39,14 @@ trait WriteMapSupport extends WriteMapSupportLow with WriteMapSupportGen {
   def writeField[T, W](name: String, that: T, to: MapWriter[W])(implicit cwf: CanWriteInField[T, W]) =
     cwf.writeInField(name, that, to)
 
+  implicit def canWriteStringMap[T, W](implicit cw: CanWrite[T, W]) = new CanWrite[Map[String, T], MapWriter[W]] {
+
+    def write(that: Map[String, T], writer: MapWriter[W]) {
+      that.foreach(t => writer.writeField(t._1, t._2))
+    }
+
+  }
+
 }
 
 trait WriteOptionAsNoField {
@@ -51,3 +59,5 @@ trait WriteOptionAsNoField {
   }
 
 }
+
+object WriteMapSupport extends WriteMapSupport
