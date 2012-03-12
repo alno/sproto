@@ -25,9 +25,11 @@ Protocols
 ---------
 
 Implemented protocols:
+
 * MongoDB objects (based on [mongo-java-driver](https://github.com/mongodb/mongo-java-driver))
 
 Planned:
+
 * JSON objects
 * Basic map/list objects
 * JSON string with no intermediate objects
