@@ -7,6 +7,15 @@ It's like [sbinary](https://github.com/harrah/sbinary) or [sjson](https://github
 Installation
 ------------
 
+For now you should compile it yourself (using SBT 0.1x.x), publish to local repository and then link from your project.
+
+SBT linkage:
+
+    libraryDependencies ++= Seq(
+      "org.sproto" %% "sproto-core" % "0.1-SNAPSHOT",
+      "org.sproto" %% "sproto-mongo" % "0.1-SNAPSHOT"
+    )
+
 Motivation
 ----------
 
@@ -26,7 +35,6 @@ Planned:
 
 Concepts
 --------
-
 
 ### Writing
 
@@ -51,9 +59,9 @@ Concepts
 Contributors
 ------------
 
-* Alexey Noskov [alno](https://github.com/alno)
+* Alexey Noskov ([alno](https://github.com/alno))
 
-Feel free to add yourself when you add new features.
+Feel free to add yourself when you fix bugs or add new features.
 
 Copyright © 2012 Alexey Noskov, released under the MIT license
 
