@@ -4,6 +4,11 @@ SProto library
 SProto is library for Scala which allows to write/read data structures using different protocols.
 It's like [sbinary](https://github.com/harrah/sbinary) or [sjson](https://github.com/debasishg/sjson) but with no hard-coded data format.
 
+Status
+------
+
+[![Build Status](https://secure.travis-ci.org/alno/sproto.png?branch=master)](http://travis-ci.org/alno/sproto)
+
 Installation
 ------------
 
